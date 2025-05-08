@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="C:/Users/sande/OneDrive/Desktop/ALL EDA TOOL PROJECT/SQL/BLINKIT/blinkit.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="125"/><column_width id="3" width="2359"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><current_table name="4,5:mainBooks"/><default_encoding codec=""/><browse_table_settings><table schema="main" name="Books" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_"><sort><column index="7" mode="0"/></sort><column_widths><column index="1" value="86"/><column index="2" value="300"/><column index="3" value="220"/><column index="4" value="117"/><column index="5" value="143"/><column index="6" value="52"/><column index="7" value="137"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="Customers" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_"><sort/><column_widths><column index="1" value="124"/><column index="2" value="197"/><column index="3" value="300"/><column index="4" value="97"/><column index="5" value="174"/><column index="6" value="300"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="Orders" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_"><sort/><column_widths><column index="1" value="90"/><column index="2" value="124"/><column index="3" value="86"/><column index="4" value="109"/><column index="5" value="84"/><column index="6" value="132"/></column_widths><filter_values><column index="3" value="491"/></filter_values><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="main" name="blinkit_data" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_"><sort/><column_widths><column index="1" value="146"/><column index="2" value="132"/><column index="3" value="168"/><column index="4" value="222"/><column index="5" value="144"/><column index="6" value="178"/><column index="7" value="98"/><column index="8" value="151"/><column index="9" value="124"/><column index="10" value="112"/><column index="11" value="98"/><column index="12" value="66"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table><table schema="temp" name="temp1" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_"><sort/><column_widths><column index="1" value="80"/><column index="2" value="58"/><column index="3" value="89"/></column_widths><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table></browse_table_settings></tab_browse><tab_sql><sql name="SQL 1">--Data Exploration
+
+--Exploring Books data
+Select * from Books
+
+--Total Authors
+Select count(DISTINCT(Author)) as Authors
+from Books
+
+--Total Genre
+Select count(DISTINCT(Genre)) as Genre
+from Books
+
+--Mark starting of Publishing Year
+Select min(Published_Year) as publishing_year
+from Books
+
+--Mark Last Publishing Year on data
+Select max(Published_Year) as publishing_year
+from Books
+
+--Total Inventory
+Select sum(Stock) as total_inventory
+from Books
+
+--Total Inventory value
+With Ct1 
+AS
+(Select 
+CASE when Price is not null then Price*Stock else 0 end as Value
+from Books)select sum(Value) AS Total_Inventory_Value from Ct1
+
+--Exploring Orders Data 
+Select * from Orders
+
+--Total Unique Customer_ID
+Select count(DISTINCT(Customer_ID)) as Customer_Count
+from Orders
+
+--Count of Unique books sold
+Select count(DISTINCT(Book_ID)) as Unique_book_count
+from Orders
+
+--Total books sold
+Select Sum(Quantity) as Total_Books_Sold
+from Orders
+
+--Total Value of books sold
+Select Sum(Total_Amount) as Total_Revenue from Orders
+
+-----Basic Analysis-----
+
+--All books in the fiction Genre
+Select Book_ID, Title
+from Books
+where Genre = 'Fiction'
+
+
+--Books Published after year 1950
+Select Book_ID, Title
+from Books
+where Published_Year &gt; 1950
+
+
+--Customers from Canada
+Select Customer_ID, Name
+from Customers
+where Country = 'Canada'
+
+--Orders placed in November 2023
+Select *
+from Orders
+where Order_Date like '2023-11-%'
+
+--Details of most expensive Books
+Select *
+from Books
+order by Price DESC
+limit 1
+
+--Show all the customers who ordered morte than 1 quntity of a Book 
+Select Customer_ID, sum(Quantity) as qty_purchased
+from Orders
+group by Customer_ID
+having qty_purchased &gt; 1
+
+--Retrieve all orders where total amount exceeds $20
+Select * 
+from Orders
+where Total_Amount &gt; 20
+
+--All genre available in the books table
+Select DISTINCT(Genre) as Genre
+from Books
+
+--Book with the lowest Stock
+Select Book_ID, Title, Stock
+from Books
+where stock in (select min(stock) from books)
+
+--Total number of books sold for each genre 
+Select B.Genre as genre, sum(O.Quantity) as qty_ordered
+from Books B
+inner join Orders O on B.Book_ID = O.Book_ID
+group by B.Genre
+
+--Average price for the books in Fantasy genre 
+Select Genre, Round(avg(Price),2) as Avg_Price
+from Books
+where Genre = 'Fantasy'
+
+--List of Customers who have atleast 2 orders 
+Select Customer_ID, count(Order_ID) as orders_placed
+from Orders
+group by Customer_ID
+HAVING orders_placed &gt;=2
+
+--Most frequently ordered Book
+Select  Title
+from Books
+where Book_ID in (Select Book_ID from (select Book_ID, count(Order_ID) as cnt from Orders group by Book_ID order by cnt desc limit 1))
+
+--Top 3 most expensive books of 'Fantasy Genre'
+Select Book_ID, Title, Genre
+from Books
+where Genre = 'Fantasy'
+order by Price
+limit 3
+
+--Total Qty of books sold by each Author
+Select b.Author as Author, sum(o.Quantity) as Qty_Sold
+from books b
+inner join Orders o
+on b.Book_ID = o.Book_ID
+group by b.Author
+
+--Cities where customers spent more than $30
+Select DISTINCT(City) as City from Customers
+where Customer_ID in(Select Customer_ID from (Select Customer_ID, sum(Total_Amount) as  Amt_Spent
+from Orders
+group by Customer_ID
+HAVING Amt_Spent &gt; 30))
+
+--Customer who spent most on Orders
+select c.*, sum(o.Total_Amount) as amt_spent
+from Customers c
+inner join Orders o
+on c.Customer_ID = o.Customer_ID
+group by c.Customer_ID
+order by amt_spent DESC
+limit 1
+
+--Calculate stock remmaining after fulfilling all Orders
+With CT2 as
+(With CT1 as
+(Select b.Book_ID as book_id, sum(b.Stock) as Stock, sum(o.Quantity) as Qty_Sold
+from books b
+inner join Orders o
+on b.Book_ID = o.Book_ID
+group by b.Book_ID) Select book_id, Stock, Qty_Sold, case when (stock - Qty_Sold)&lt;0 then 0 else Stock - Qty_Sold end as remaining_qty from CT1)
+Select sum(remaining_qty) as Total_Remaining_Stock from CT2
+</sql><current_tab id="0"/></tab_sql></sqlb_project>
